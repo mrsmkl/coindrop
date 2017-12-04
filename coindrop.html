@@ -1,0 +1,89 @@
+<!doctype html>
+
+<meta charset="UTF-8">
+
+<title>Coin drop</title>
+
+
+<style>
+    
+    body {
+        margin: 0px;
+        background-color: blue;
+        overflow: hidden;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none; 
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+    
+    canvas {
+        position: absolute;
+        top:0px;
+        left:0px;
+        width: 100px;
+        height: 100px;
+        cursor: crosshair;
+    }
+    
+    div#log {
+        position: fixed;
+        font-size: 15px;
+        color: gray;
+        width: 50%;
+        top: 10px;
+        left: 10px;
+        z-index: 1000;
+    }
+    
+    div#message {
+        position: fixed;
+        font-size: 60px;
+        color: gray;
+        // text-align: center;
+        width: 20%;
+        bottom: 0px;
+        z-index: 1000;
+    }
+    
+    div#message2 {
+        position: fixed;
+        font-size: 60px;
+        color: gray;
+        // text-align: center;
+        width: 20%;
+        bottom: 0px;
+        right: 0px;
+        z-index: 1000;
+    }
+    
+    div#message3 {
+        position: fixed;
+        font-size: 60px;
+        color: gray;
+        // text-align: center;
+        width: 20%;
+        bottom: 0px;
+        left: 45%;
+        z-index: 1000;
+    }
+    
+</style>
+
+<body>
+
+    <div id="message">Coin drop</div>
+    <div id="log">Starting up ...</div>
+    <div id="message2"></div>
+    <div id="message3"></div>
+
+<script src="three.new.js"></script>
+<script src="Box2D_v2.3.1_min.js"></script>
+<script src="objects.js"></script>
+<script src="ground.js"></script>
+<script src="text.js"></script>
+<script src="coindrop.js"></script>
+</body>
+
