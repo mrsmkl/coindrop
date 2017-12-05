@@ -48,6 +48,7 @@ contract Coindrop {
       b.next_state = next_state;
    }
    
+   // There will probably be some kind of magic positions for special actions like reserving buckets
    function addCoin(int x, int y) payable public {
       initBlock(block.number);
       Block storage b = blocks[block.number];
