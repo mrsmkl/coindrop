@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 
 struct data {
     uint8_t *addr;
@@ -13,7 +15,9 @@ struct data {
 uint8_t *get_bytes32(FILE *f) {
     uint8_t *res = malloc(32);
     int ret = fread(res, 1, 32, f);
+    printf("Got %i\n", ret);
     if (ret != 32) {
+        printf("Error %i: %s\n", ferror(f), strerror(ferror(f)));
         free(res);
         return 0;
     }
@@ -33,6 +37,7 @@ struct data get_data(FILE *f) {
 int main(int argc, char **argv) {
     // Load data from file
     FILE *input = fopen("input.data", "rb");
+
     if (!input) {
         fprintf(stderr, "Error: Cannot read input.data\n");
         return 1;
@@ -43,6 +48,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     
+    // fseek(input, 0, SEEK_SET);
     while (1) {
         struct data record = get_data(input);
         if (record.addr == 0) break;
