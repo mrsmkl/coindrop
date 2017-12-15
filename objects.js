@@ -2650,14 +2650,32 @@ function makeHexagon(x,y) {
     return makeModel(x, y, "hexagon", body)
 }
 
+function rnd(lst) {
+    return lst[Math.floor(Math.random()*lst.length)]
+}
+
+var logos = [
+    loader.load("eth.png"),
+    loader.load("fairytales.png"),
+    loader.load("truebit.png")
+]
+
 models.hexagon = function (x,y) {
     var geometry = new THREE.CylinderGeometry(1, 1, 2, 6)
+    // fix uvs 
+    var c = function (idx) {
+        var v = geometry.vertices[idx]
+        return new THREE.Vector2((v.x/2+0.5), (-v.z/2+0.5))
+    }
+    geometry.faces.forEach((f, i) => geometry.faceVertexUvs[0][i] = [c(f.a), c(f.b), c(f.c)])
     geometry.rotateX(Math.PI/2)
     geometry.rotateZ(Math.PI/6)
     
     // var material = new THREE.MeshStandardMaterial( { color: 0xffee11,  emissive: 0xffee11, metalness: 0.9, roughness: 0.1 } );
-    var material = new THREE.MeshPhongMaterial( { color: 0xffee11,  specular: 0xffee11 } );
-    material.shininess = 100;
+    // var material = new THREE.MeshPhongMaterial( { color: Math.floor(Math.random()*Math.pow(2,24)),  specular: 0xffee11 } );
+    var rnd_col = Math.floor(Math.random()*Math.pow(2,24))
+    var material = new THREE.MeshPhongMaterial( { specular: rnd_col, color: rnd_col, map: rnd(logos) } );
+    material.shininess = 0;
     var obj = new THREE.Mesh(geometry, material)
     return obj;
 }
