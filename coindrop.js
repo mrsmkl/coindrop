@@ -131,18 +131,20 @@ function makeGroundBox() {
 
 var mouse = new THREE.Vector2();
 
+/*
 var grass_texture = loader.load( "grass.png" );
 grass_texture.wrapS = grass_texture.wrapT = THREE.RepeatWrapping;
 grass_texture.repeat.set(0.1, 0.1);
 grass_texture.offset.y = 0.5;
 
 var t_texture = loader.load("tausta.png");
+*/
 
 function makeBG() {
-    var mesh = new THREE.Mesh(new THREE.PlaneGeometry(100,50), new THREE.MeshStandardMaterial({map:t_texture}));
+    var mesh = new THREE.Mesh(new THREE.PlaneGeometry(100,50), new THREE.MeshStandardMaterial({color:0x111111}));
     scene.add(mesh);
     mesh.position.z = -12;
-    mesh.position.y = 10;
+    mesh.position.y = 0;
     return mesh;
 }
 
@@ -336,6 +338,9 @@ function makeLevel(level) {
 }
 
 function initGame() {
+    camera.position.z = 25
+    camera.position.x = 5
+    camera.position.y = -10
     initWorld();
     createLevels();
     cur_levels = [];
@@ -455,6 +460,12 @@ document.body.onkeydown = function (ev) {
     }
     else if (ev.keyCode == 37) {
         camera.position.x -= 1
+    }
+    else if (ev.keyCode == 107) {
+        camera.position.z -= 2
+    }
+    else if (ev.keyCode == 109) {
+        camera.position.z += 2
     }
     else console.log(ev.keyCode)
 }
