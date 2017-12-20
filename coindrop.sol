@@ -18,6 +18,8 @@ interface Filesystem {
 
 interface TrueBit {
    function add(bytes32 init, /* CodeType */ uint8 ct, /* Storage */ uint8 cs, string stor) public returns (uint);
+   function addWithParameters(bytes32 init, /* CodeType */ uint8 ct, /* Storage */ uint8 cs, string stor, uint8 stack, uint8 mem, uint8 globals, uint8 table, uint8 call) public returns (uint);
+   function requireFile(uint id, bytes32 hash, /* Storage */ uint8 st) public;
 }
 
 contract Coindrop {
@@ -37,55 +39,62 @@ contract Coindrop {
       bytes32 input_file;
       bytes32 bundle;
       uint task;
+      uint last;
    }
 
    mapping (uint => Block) blocks;
    mapping (uint => uint) task_to_block;
+   
+   uint current;
 
    function Coindrop(address tb, address fs, string code_address, bytes32 init_hash, bytes32 next_state) public {
       truebit = TrueBit(tb);
       filesystem = Filesystem(fs);
       code = code_address;     // address for wasm file in IPFS
       init = init_hash;        // the canonical hash
-      initBlock(block.number);
-      Block storage b = blocks[block.number];
-      b.next_state = next_state;
+      blocks[block.number].inputs.push(bytes32(block.number));
+      blocks[0].next_state = next_state;
+      current = block.number;
    }
 
    // There will probably be some kind of magic positions for special actions like reserving buckets
    function addCoin(int x, int y) payable public {
       initBlock(block.number);
-      Block storage b = blocks[block.number];
+      Block storage b = blocks[current];
       b.inputs.push(bytes32(msg.sender));
       b.inputs.push(bytes32(x));
       b.inputs.push(bytes32(y));
       b.inputs.push(bytes32(msg.value));
    }
 
-   function idToString(bytes32 id) public pure returns (string) {
-      bytes memory res = new bytes(64);
-      for (uint i = 0; i < 64; i++) res[i] = bytes1(((uint(id) / (2**(4*i))) & 0xf) + 65);
-      return string(res);
-   }
-
    // first input is the number of the block
    function initBlock(uint num) internal {
+      if (blocks[current].task == 0) return;
       Block storage b = blocks[num];
       if (b.inputs.length > 0) return;
       b.inputs.push(bytes32(num));
+      b.last = current;
+      current = num;
+   }
+   
+   function checkInput() public view returns (bytes32[]) {
+      return blocks[current].inputs;
    }
 
-   function submitBlock(uint num) public {
-      require(block.number > num);
+   function submitBlock() public {
+      uint num = current;
       Block storage b = blocks[num];
-      Block storage last = blocks[num-1];
-      b.input_file = filesystem.createFileWithContents("input.dta", num, b.inputs, b.inputs.length*32);
+      require(block.number > num && b.task == 0);
+      Block storage last = blocks[b.last];
+      b.input_file = filesystem.createFileWithContents("input.data", num, b.inputs, b.inputs.length*32);
       b.bundle = filesystem.makeBundle(num);
       filesystem.addToBundle(b.bundle, b.input_file);
       filesystem.addToBundle(b.bundle, last.next_state);
       filesystem.finalizeBundleIPFS(b.bundle, code, init);
       
-      b.task = truebit.add(filesystem.getInitHash(b.bundle), 0, 1, idToString(b.bundle));
+      b.task = truebit.addWithParameters(filesystem.getInitHash(b.bundle), 1, 1, idToString(b.bundle), 20, 25, 8, 20, 10);
+      truebit.requireFile(b.task, hashName("output.data"), 1);
+      truebit.requireFile(b.task, hashName("state.data"), 0);
       task_to_block[b.task] = num;
    }
 
@@ -113,6 +122,29 @@ contract Coindrop {
       uint v = uint(b.settled[idx*2+1]);
       b.settled[idx*2+1] = bytes32(0);
       msg.sender.transfer(v);
+   }
+   
+   ///// Utils
+
+   function idToString(bytes32 id) public pure returns (string) {
+      bytes memory res = new bytes(64);
+      for (uint i = 0; i < 64; i++) res[i] = bytes1(((uint(id) / (2**(4*i))) & 0xf) + 65);
+      return string(res);
+   }
+
+   function makeMerkle(bytes arr, uint idx, uint level) internal pure returns (bytes32) {
+      if (level == 0) return idx < arr.length ? bytes32(uint(arr[idx])) : bytes32(0);
+      else return keccak256(makeMerkle(arr, idx, level-1), makeMerkle(arr, idx+(2**(level-1)), level-1));
+   }
+
+   function calcMerkle(bytes32[] arr, uint idx, uint level) internal returns (bytes32) {
+      if (level == 0) return idx < arr.length ? arr[idx] : bytes32(0);
+      else return keccak256(calcMerkle(arr, idx, level-1), calcMerkle(arr, idx+(2**(level-1)), level-1));
+   }
+
+   // assume 256 bytes?
+   function hashName(string name) public pure returns (bytes32) {
+      return makeMerkle(bytes(name), 0, 8);
    }
 
 }

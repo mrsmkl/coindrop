@@ -22,6 +22,7 @@ function arrange(arr) {
     var res = []
     var acc = ""
     arr.forEach(function (b) { acc += b; if (acc.length == 64) { res.push("0x"+acc); acc = "" } })
+    if (acc != "") res.push("0x"+acc)
     console.log(res)
     return res
 }
@@ -33,29 +34,25 @@ async function createFile(fname, buf) {
         if (buf[i] > 15) arr.push(buf[i].toString(16))
         else arr.push("0" + buf[i].toString(16))
     }
-    // logger.info("Nonce %s file", nonce, {arr:arr})
+    console.log("Nonce", nonce, {arr:arrange(arr)})
     var tx = await filesystem.methods.createFileWithContents(fname, nonce, arrange(arr), buf.length).send(send_opt)
     var id = await filesystem.methods.calcId(nonce).call(send_opt)
     return id
 }
 
 async function doDeploy() {
-    var file_id = await createFile("output.data", "")
+    var file_id = await createFile("state.data", [1,2,3,4])
     var send_opt = {gas:4700000, from:config.base}
-    console.log(send_opt, file_id)
+//    console.log(send_opt, file_id)
     var init_hash = "0x7e176e57dacd1dc924c0a1d0d456d5ee1c25673a84ec8e6cf266a8c3bfc87ba7"
     var code_address = "QmcyyY3xzmViHRsqAafgHCYN59o2JJJKp1tjzgvJCfFZMs"
-//    var contract = await new web3.eth.Contract(abi).deploy({data: code, arguments:[]}).send(send_opt)
     var contract = await new web3.eth.Contract(abi).deploy({data: code, arguments:[config.tasks, config.fs, code_address, init_hash, file_id]}).send(send_opt)
-//     var arg = {data: code, arguments:[config.tasks, config.fs, code_address, init_hash, file_id]}
-    var arg = {data: code, arguments:[]}
-    console.log(arg)
-//    var contract = await new web3.eth.Contract(abi)
-//    var tx = await contract.deploy(arg).send(send_opt, function (err,tx) { console.log("sdf", err, tx) })
-//    console.log(tx)
-    console.log(contract.options.address)
     config.coindrop = contract.options.address
     console.log(JSON.stringify(config))
+    await contract.methods.addCoin(123, 234).send(send_opt)
+    var lst = await contract.methods.checkInput().call(send_opt)
+    console.log("Input", lst)
+    await contract.methods.submitBlock().send(send_opt)
     process.exit(0)
 }
 
