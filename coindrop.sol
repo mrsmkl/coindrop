@@ -5,6 +5,7 @@ interface Filesystem {
 
    function createFileWithContents(string name, uint nonce, bytes32[] arr, uint sz) public returns (bytes32);
    function getSize(bytes32 id) public view returns (uint);
+   function getRoot(bytes32 id) public view returns (bytes32);
    function forwardData(bytes32 id, address a) public;
    
    // function makeSimpleBundle(uint num, address code, bytes32 code_init, bytes32 file_id) public returns (bytes32);
@@ -13,6 +14,8 @@ interface Filesystem {
    function addToBundle(bytes32 id, bytes32 file_id) public returns (bytes32);
    function finalizeBundleIPFS(bytes32 id, string file, bytes32 init) public;
    function getInitHash(bytes32 bid) public view returns (bytes32);
+   
+   function debug_finalizeBundleIPFS(bytes32 id, string file, bytes32 init) public returns (bytes32, bytes32, bytes32, bytes32, bytes32);
    
 }
 
@@ -52,7 +55,7 @@ contract Coindrop {
       filesystem = Filesystem(fs);
       code = code_address;     // address for wasm file in IPFS
       init = init_hash;        // the canonical hash
-      blocks[block.number].inputs.push(bytes32(block.number));
+      // blocks[block.number].inputs.push(bytes32(block.number));
       blocks[0].next_state = next_state;
       current = block.number;
    }
@@ -72,7 +75,7 @@ contract Coindrop {
       if (blocks[current].task == 0) return;
       Block storage b = blocks[num];
       if (b.inputs.length > 0) return;
-      b.inputs.push(bytes32(num));
+      // b.inputs.push(bytes32(num));
       b.last = current;
       current = num;
    }
@@ -90,12 +93,59 @@ contract Coindrop {
       b.bundle = filesystem.makeBundle(num);
       filesystem.addToBundle(b.bundle, b.input_file);
       filesystem.addToBundle(b.bundle, last.next_state);
+      bytes32[] memory empty = new bytes32[](0);
+      filesystem.addToBundle(b.bundle, filesystem.createFileWithContents("output.data", num+1000000000, empty, 0));
       filesystem.finalizeBundleIPFS(b.bundle, code, init);
       
       b.task = truebit.addWithParameters(filesystem.getInitHash(b.bundle), 1, 1, idToString(b.bundle), 20, 25, 8, 20, 10);
       truebit.requireFile(b.task, hashName("output.data"), 1);
       truebit.requireFile(b.task, hashName("state.data"), 0);
       task_to_block[b.task] = num;
+   }
+
+   function debugHash() public returns (bytes32) {
+      uint num = current;
+      Block storage b = blocks[num];
+      require(block.number > num && b.task == 0);
+      Block storage last = blocks[b.last];
+      b.input_file = filesystem.createFileWithContents("input.data", num, b.inputs, b.inputs.length*32);
+      b.bundle = filesystem.makeBundle(num);
+      filesystem.addToBundle(b.bundle, b.input_file);
+      filesystem.addToBundle(b.bundle, last.next_state);
+      bytes32[] memory empty = new bytes32[](0);
+      filesystem.addToBundle(b.bundle, filesystem.createFileWithContents("output.data", num+1000000000, empty, 0));
+      filesystem.finalizeBundleIPFS(b.bundle, code, init);
+      
+      return filesystem.getInitHash(b.bundle);
+   }
+
+   function debugBlock() public returns (bytes32, bytes32, bytes32, bytes32, bytes32) {
+      uint num = current;
+      Block storage b = blocks[num];
+      require(block.number > num && b.task == 0);
+      Block storage last = blocks[b.last];
+      b.input_file = filesystem.createFileWithContents("input.data", num, b.inputs, b.inputs.length*32);
+      b.bundle = filesystem.makeBundle(num);
+      filesystem.addToBundle(b.bundle, b.input_file);
+      filesystem.addToBundle(b.bundle, last.next_state);
+      bytes32[] memory empty = new bytes32[](0);
+      filesystem.addToBundle(b.bundle, filesystem.createFileWithContents("output.data", num+1000000000, empty, 0));
+      
+      return filesystem.debug_finalizeBundleIPFS(b.bundle, code, init);
+   }
+
+   function debugFiles() public returns (bytes32, bytes32, bytes32) {
+      uint num = current;
+      Block storage b = blocks[num];
+      require(block.number > num && b.task == 0);
+      Block storage last = blocks[b.last];
+      b.input_file = filesystem.createFileWithContents("input.data", num, b.inputs, b.inputs.length*32);
+      filesystem.addToBundle(b.bundle, b.input_file);
+      filesystem.addToBundle(b.bundle, last.next_state);
+      bytes32[] memory empty = new bytes32[](0);
+      bytes32 empty_file = filesystem.createFileWithContents("output.data", num+1000000000, empty, 0);
+      
+      return (filesystem.getRoot(b.input_file), filesystem.getRoot(last.next_state), filesystem.getRoot(empty_file));
    }
 
    uint remember_task;

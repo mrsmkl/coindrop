@@ -44,14 +44,19 @@ async function doDeploy() {
     var file_id = await createFile("state.data", [1,2,3,4])
     var send_opt = {gas:4700000, from:config.base}
 //    console.log(send_opt, file_id)
-    var init_hash = "0x7e176e57dacd1dc924c0a1d0d456d5ee1c25673a84ec8e6cf266a8c3bfc87ba7"
-    var code_address = "QmcyyY3xzmViHRsqAafgHCYN59o2JJJKp1tjzgvJCfFZMs"
+    var init_hash = "0x91c3688807987860d04dec4856fa4a8b3d4df484b82c211e80cb5b830cc6e3b6"
+    var code_address = "QmT1tb6fRieTsryzfVFB6CBgzmpHBbcaRdW6eHfxS6embm"
     var contract = await new web3.eth.Contract(abi).deploy({data: code, arguments:[config.tasks, config.fs, code_address, init_hash, file_id]}).send(send_opt)
     config.coindrop = contract.options.address
     console.log(JSON.stringify(config))
     await contract.methods.addCoin(123, 234).send(send_opt)
     var lst = await contract.methods.checkInput().call(send_opt)
     console.log("Input", lst)
+    var dta = await contract.methods.debugBlock().call(send_opt)
+    console.log(dta)
+    var dta2 = await contract.methods.debugFiles().call(send_opt)
+    console.log(dta2)
+    console.log("Hash", await contract.methods.debugHash().call(send_opt))
     await contract.methods.submitBlock().send(send_opt)
     process.exit(0)
 }
