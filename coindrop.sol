@@ -27,6 +27,9 @@ interface TrueBit {
 
 contract Coindrop {
 
+   event GotFiles(bytes32[] files);
+   event Consuming(bytes32[] arr);
+
    uint nonce;
    TrueBit truebit;
    Filesystem filesystem;
@@ -98,8 +101,8 @@ contract Coindrop {
       filesystem.finalizeBundleIPFS(b.bundle, code, init);
       
       b.task = truebit.addWithParameters(filesystem.getInitHash(b.bundle), 1, 1, idToString(b.bundle), 20, 25, 8, 20, 10);
-      truebit.requireFile(b.task, hashName("output.data"), 1);
-      truebit.requireFile(b.task, hashName("state.data"), 0);
+      truebit.requireFile(b.task, hashName("output.data"), 0);
+      truebit.requireFile(b.task, hashName("state.data"), 1);
       task_to_block[b.task] = num;
    }
 
@@ -151,7 +154,8 @@ contract Coindrop {
    uint remember_task;
 
    function consume(bytes32, bytes32[] arr) public {
-      require(TrueBit(msg.sender) == truebit);
+      Consuming(arr);
+      require(Filesystem(msg.sender) == filesystem);
       Block storage b = blocks[remember_task];
       b.settled = arr;
    }
@@ -160,9 +164,10 @@ contract Coindrop {
    function solved(uint id, bytes32[] files) public {
       // could check the task id
       remember_task = task_to_block[id];
-      filesystem.forwardData(files[1], this);
+      filesystem.forwardData(files[0], this);
       Block storage b = blocks[remember_task];
-      b.next_state = files[2];
+      b.next_state = files[1];
+      GotFiles(files);
    }
 
    // need some way to get next state, perhaps shoud give all files as args

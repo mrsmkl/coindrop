@@ -40,6 +40,13 @@ async function createFile(fname, buf) {
     return id
 }
 
+async function outputFile(id) {
+    var lst = await filesystem.methods.getData(id).call(send_opt)
+    console.log("File data for", id, "is", lst)
+    var dta = await filesystem.methods.debug_forwardData(id, config.coindrop).call(send_opt)
+    console.log("DEBUG: ", dta)
+}
+
 async function doDeploy() {
     var file_id = await createFile("state.data", [1,2,3,4])
     var send_opt = {gas:4700000, from:config.base}
@@ -58,7 +65,15 @@ async function doDeploy() {
     console.log(dta2)
     console.log("Hash", await contract.methods.debugHash().call(send_opt))
     await contract.methods.submitBlock().send(send_opt)
-    process.exit(0)
+    contract.events.GotFiles(function (err,ev) {
+        console.log("Files", ev.returnValues)
+        var files = ev.returnValues.files
+        files.forEach(outputFile)
+    })
+    contract.events.Consuming(function (err,ev) {
+        console.log("Consuming", ev.returnValues)
+    })
+    // process.exit(0)
 }
 
 doDeploy()
