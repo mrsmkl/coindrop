@@ -17,7 +17,7 @@ RUN git clone https://github.com/juj/emsdk \
  && ./emsdk install sdk-1.37.28-64bit \
  && ./emsdk activate sdk-1.37.28-64bit \
  && cd /root \
- && sed -e "s/'\/emsdk\/clang\/e1.37.28_64bit'/'\/usr\/bin'/" .emscripten > emscripten
+ && sed -e "s/'\/emsdk\/clang\/e1.37.28_64bit'/'\/usr\/bin'/" .emscripten > emscripten \
  && cp emscripten .emscripten
 
 RUN git clone https://github.com/TrueBitFoundation/emscripten-module-wrapper \
