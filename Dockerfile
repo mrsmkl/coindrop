@@ -20,15 +20,19 @@ RUN git clone https://github.com/juj/emsdk \
  && sed -e "s/'\/emsdk\/clang\/e1.37.28_64bit'/'\/usr\/bin'/" .emscripten > emscripten \
  && cp emscripten .emscripten
 
+RUN apt install -y bash \
+ && rm /bin/sh \
+ && ln -s /bin/bash /bin/sh
+
 RUN git clone https://github.com/TrueBitFoundation/emscripten-module-wrapper \
  && cd emscripten-module-wrapper \
- && source /emsdk/emsdk_env.sh \
+ && . /emsdk/emsdk_env.sh \
  && npm install ipfs-api \
  && sed -e "s/\/home\/sami//" prepare.js > prepare2.js
 
 RUN git clone https://github.com/mrsmkl/coindrop \
  && cd coindrop \
- && source /emsdk/emsdk_env.sh \
+ && . /emsdk/emsdk_env.sh \
  && emcc -o simple.js simple.c \
  && touch output.data \
  && touch input.data \
