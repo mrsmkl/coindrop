@@ -33,7 +33,7 @@ RUN git clone https://github.com/TrueBitFoundation/emscripten-module-wrapper \
 RUN git clone https://github.com/mrsmkl/coindrop \
  && cd coindrop \
  && . /emsdk/emsdk_env.sh \
- && emcc -o simple.js simple.c \
+ && emcc -s WASM=1 -o simple.js simple.c \
  && touch output.data \
  && touch input.data \
  && node /emscripten-module-wrapper/prepare2.js simple.js --file input.data --file output.data
